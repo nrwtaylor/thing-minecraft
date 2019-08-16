@@ -18,6 +18,8 @@ var tick_interval = 15000; // 15 second tick
 var tick_count = 0;
 var bar_count = 0;
 
+var magic_word = "qiyu";
+
 setInterval(function(){ doTick();},tick_interval) //logs hi every second
 
 rcon.connect().then(() => {
@@ -25,7 +27,7 @@ rcon.connect().then(() => {
 }).then(res => {
   console.log(res);
 }).then(() => {
-  //return rcon.disconnect();
+//  return rcon.disconnect();
 });
 
 var fs = require("fs");
@@ -40,10 +42,17 @@ tail = new Tail(filePath);
 
 //when a new line appears do this
 tail.on("line", function(data) {
+
+    console.log("datagram " + data);
     //  console.log(data);
     //rcon.send('say Greetings');
 
     var  scrap = data.split("]: ");
+
+var player_name = null;
+var subject = data;
+if (scrap[1] != undefined) {
+
     var a =scrap[1].split(">");
     var player_name = "world";
     var subject = a[0].substr(0);
@@ -54,14 +63,36 @@ tail.on("line", function(data) {
         var player_name = a[0].substr(1);
     }
 
+}
+
     console.log("subject " + subject);
     console.log("player_name " + player_name);
 
-    if (player_name == "Rcon") {return;} 
+    if (player_name == "Rcon") {
+
+
+        if (!subject.includes(magic_word)) {
+        //    console.log('Test command spotted.');
+        
+       //     rcon.send('say TJoined.');
+            return;
+        }
+
+
+//return;
+} 
+
+console.log("Datagram forwarded to Agent.");
 
     if (player_name == "world") {
 
         if (subject.includes('UUID of ')) {
+
+           matches = url.match(/listings\/([A-F\d-]+)\?/);
+
+           var player_uuid = matches[1];
+
+            console.log('Saw uuid '+ player_uuid);
             rcon.send('say heard entity id');
             return;
         }
@@ -78,6 +109,17 @@ tail.on("line", function(data) {
             return;
         }
 
+        if (subject.includes('was burnt to a crisp whilst fighting')) {
+            rcon.send('say Ouch.');
+            return;
+        }
+
+        if (subject.includes('was shot by')) {
+            rcon.send('say Ouch.');
+            return;
+        }
+
+
         if (subject.includes('was slain by')) {
             rcon.send('say That is unfortunate.');
             return;
@@ -90,35 +132,50 @@ tail.on("line", function(data) {
             return;
         }
 
-        //rcon.send('say heard world chatter');
-        return;
+        // Check the magic word.
+        if (!subject.includes(magic_word)) {
+            console.log("Ignored a world message.");
+            return;
+        }
+
     }
+
+
+    console.log("Processing subject.");
 
     // Spot keywords in messages.
     var match = false
 
     if (subject.toLowerCase().includes('edna')) {
       console.log("Saw a request for edna");
-      var ret = subject.replace(/edna/g,'');
+      var filtered_input = subject.replace(/edna/g,'');
       match = true;
     }
 
     if (subject.toLowerCase().includes('ednabot')) {
       console.log("Saw a request for ednabot");
-      var ret = subject.replace(/edna/g,'');
+      var filtered_input = subject.replace(/edna/g,'');
       match = true;
     }
 
     if (subject.includes('[Rcon]')) {
       // Ignore instructions from Rcon.
       // Since these will be from this code.
-      return;
-    }
+//      return;
 
+        if (!subject.includes('qiyu')) {
+            return;
+        }
+
+//        var filtered_input = subject.replace(/[Rcon]/g,'');
+        var filtered_input = subject.replace('[Rcon]','');
+
+    }
 
 
     if (match == false) {return;}
 
+    console.log("Responding to subject.");
 /* Check for system 
 [00:44:38] [Server thread/INFO]: Player2 lost connection: Disconnected
 [00:44:38] [Server thread/INFO]: Player2 left the game
@@ -129,38 +186,60 @@ tail.on("line", function(data) {
 */
 
 
-    ret = ret.trim();
+    filtered_input = filtered_input.trim();
 
     if (player_name == "world") {
         rcon.send('say world message heard');
-        return;
+        console.log('Hook for world messages needing a response.');
+        //return;
+
+        // magic word for testing from rcon
+        if (!subject.includes(magic_word)) {
+            return;
+        }
+
+        var filtered_input = subject.replace('qiyu','');
+
     }
 
+    filtered_input = filtered_input.trim();
+
+    console.log("Preparing response to " + filtered_input);
+
+    var response = "say heard " + filtered_input;
+
+    console.log("filtered_input " + filtered_input);
+
+    var ngrams = getNgrams(filtered_input, 3);
+    ngrams = ngrams.concat( getNgrams(filtered_input, 2) );
+    ngrams = ngrams.concat( getNgrams(filtered_input, 1) );
 
 
-    var response = "say heard " + ret;
+console.log(ngrams);
 
-    console.log("ret" + ret);
+ngrams.forEach(function(ngram) {
+//  console.log(ngram);
+
 
     switch(true) {
-        case (ret == ""):
+        case (ngram == ""):
             rcon.send('say hey');
             return;
 
-        case (ret == "call crow"):
+        case (ngram == "call crow"):
             callCrow();
             return;
 
-        case (ret == "call bob"):
+        case (ngram == "call bob"):
             callCrow();
             return;
 
-        case (ret == "crow"):
+        case (ngram == "crow"):
             doCrow();
             rcon.send('say Bob appeared. Somewhere.');
             return;
 
-        case (ret == "select"):
+        case (ngram == "select"):
             doSelect();
             return;
 
@@ -168,9 +247,47 @@ tail.on("line", function(data) {
             // code block
     }
 
-    callStack(ret);
+});
+
+    console.log("Sent message to stack.");
+    var response = callStack(filtered_input);
+    console.log(response);
 
 });
+
+
+    function getNgrams(input, n = 3) {
+        //$words = explode(' ', $input);
+        var words = input.split(" ");
+        ngrams = [];
+
+       for (var key = 0, len = words.length; key < len; key++) {
+
+  //someFn(arr[i]);
+
+//}
+//        words.forEach(function (value) {
+//  someFn(item);
+//})
+
+//        foreach (words as $key=>$value) {
+
+            //if ($key < count($words) - ($n - 1)) {
+            if (key < ( words.length - (n - 1) ) ) {
+                ngram = "";
+                for (var i = 0; i < n; i++) {
+if (i != 0) {ngram += " ";}
+                    ngram +=  words[key + i] ;
+                }
+//ngram.trim();
+//console.log("- " + ngram);
+                ngrams.push(ngram);
+            }
+        }
+        return ngrams;
+    }
+
+
 
 function doCrow() {
 
@@ -196,6 +313,10 @@ function doNuuid() {
 
 }
 
+function doMessage() {
+
+
+}
 
 function callStack(command, callback) {
     command = command.trim();
@@ -206,23 +327,21 @@ function callStack(command, callback) {
             return
         }
 
-  var jsonObject = JSON.parse(body);
-  var thing_uuid = jsonObject['thing']['uuid'];
-//console.log(command);
-  parse(thing_uuid , command, function( val ) {
-         newData = val;
+    var jsonObject = JSON.parse(body);
+    var thing_uuid = jsonObject['thing']['uuid'];
 
-rcon.send("say " + val);
+    parse(thing_uuid , command, function( val ) {
+        newData = val;
+        //rcon.send("say " + val);
 
-//callback(val);
-console.log(val);
+        //console.log(val);
 
 //         callback(val);
-
          //console.log( "newData : " , newData );
          //console.log( "this happens last" );
          // if you need to return anything, return it here. Do everything else you want to do inside this parse function.
         // return res.sendStatus( 200 );
+return val;
     } );
 })
 
@@ -244,8 +363,17 @@ function parse( out , command, callback ){
   $search_string = '<div class="blob">sms<br>';
   var  scrap = body.split($search_string);
 //console.log(scrap);
+
+
+    if (scrap[1] === undefined){
+        callback(null);
+        return;
+    }
+
+
+
   var a =scrap[1].split("<br>");
-  console.log(a[0]);
+  //console.log(a[0]);
   callback(a[0]);
   })
 }
@@ -254,6 +382,7 @@ function parse( out , command, callback ){
 
 function callCrow() {
 
+    callStack("crow");
     rcon.send("tp @e[name=Bob] @p");
     rcon.send("say Called Bob.");
 
@@ -316,7 +445,5 @@ if (bar_count > 80) {bar_count = 0;}
 }
 
 function doAnnouncement(text) {
-
-rcon.send("say " +text);
-
+    rcon.send("say " +text);
 }
