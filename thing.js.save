@@ -1,85 +1,40 @@
-/*
-var Rcon = require('simple-rcon');
-
-
-var client = new Rcon({
-  host: '127.0.0.1',
-  port: '25575',
-  password: 'test'
-}).exec('say hello', function(res) {
-  console.log('Server status', res.body);
-}).exec('sm_kick somebody', function() {
-  client.close();
-}).connect();
-*/
-
-var fs = require('fs');
-
-var Rcon = require('rcon');
-
-var conn = new Rcon('localhost', 25575, 'test');
-conn.on('auth', function() {
-  console.log("Authed!");
-
-}).on('response', function(str) {
-  console.log("Got response: " + str);
-
-}).on('end', function() {
-  console.log("Socket closed!");
-  process.exit();
-
-});
-
-conn.connect();
-
 //const rcon = require('rcon-srcds');
-/*
-const server = new rcon({ host: 'localhost', port:'25575' });
+//const server = new Rcon({ port: 25575 });
+ 
+//server.authenticate('test')
+//    .then(() => {
+//        console.log('Authenticated');
+//        return server.execute('status');
+//    })
+//    .then(console.log)
+//    .catch(console.error);
 
-
-server.authenticate('test')
-    .then(() => {
-        console.log('Authenticated');
-        return server.execute('say Edna connected.');
-    })
-    .then(() => {
-       server.disconnect();
-    })
-    .then(console.log)
-    .catch(console.error);
-
-*/
-
-/*
-server.authenticate('test')
-    .then(() => {
-        console.log('Authenticated');
-        return server.execute('status');
-    })
-    .then(console.log)
-    .catch(console.error);
-*/
 const request = require('request')
 
-//const Rcon = require('modern-rcon');
-//const rcon = new Rcon('localhost', 'test', 10000);
+const Rcon = require('modern-rcon');
+const rcon = new Rcon('localhost', 'test');
 
 var tick_interval = 15000; // 15 second tick
 var tick_count = 0;
 var bar_count = 0;
 
-var magic_word = "merp";
+var magic_word = "qiyuasdflakjshkajshlkjshadfkljhasdn";
 
 setInterval(function(){ doTick();},tick_interval) //logs hi every second
-
-
+/*
+rcon.connect().then(() => {
+  return rcon.send('say Edna has connected.'); // That's a command for Minecraft
+}).then(res => {
+  console.log(res);
+}).then(() => {
+//  return rcon.disconnect();
+});
+*/
 var fs = require("fs");
 var filePath = "/opt/minecraft/server/logs/latest.log";
 var file = fs.readFileSync(filePath);
 
-console.log("Reading minecraft server log.");
-
-//console.log(file);
+console.log(file);
 
 Tail = require('tail').Tail;
 
@@ -88,7 +43,7 @@ tail = new Tail(filePath);
 //when a new line appears do this
 tail.on("line", function(data) {
 
-    console.log("\n" + "datagram " + data);
+    console.log("datagram " + data);
     //  console.log(data);
     //rcon.send('say Greetings');
 
@@ -96,25 +51,11 @@ tail.on("line", function(data) {
 
 var player_name = null;
 var subject = data;
-
-
 if (scrap[1] != undefined) {
 
     var a =scrap[1].split(">");
-
-    var subject = a[0].substr(0);
-
-
-    var temp =scrap[1].split(" ");
     var player_name = "world";
-    if (temp[0] =="[Rcon]") {
-       player_name = "rcon";
-       subject = subject.replace("[Rcon] ", "");
-    }
-
-
-
-//    var subject = a[0].substr(0);
+    var subject = a[0].substr(0);
     var query = a[1];
 
     if (typeof query !== 'undefined' && query !== null){
@@ -127,11 +68,10 @@ if (scrap[1] != undefined) {
     console.log("subject " + subject);
     console.log("player_name " + player_name);
 
-    if (player_name == "rcon") {
+    if (player_name == "Rcon") {
 
 
         if (!subject.includes(magic_word)) {
-           console.log("Ignored a rcon command.");
         //    console.log('Test command spotted.');
         
        //     rcon.send('say TJoined.');
@@ -142,28 +82,19 @@ if (scrap[1] != undefined) {
 //return;
 } 
 
-if (subject == null) {return;}
-
 console.log("Datagram forwarded to Agent.");
-
-
-// Recognize fingerprints.
-
-
 
     if (player_name == "world") {
 
         if (subject.includes('UUID of ')) {
 
 //           matches = subject.match(/listings\/([A-F\d-]+)\?/);
-              matches = subject.match(/([0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})/);
+              matches = url.match(/([0-9a-f]{8}-([0-9a-f]{4}-){3}[0-9a-f]{12})/);
 
             var player_uuid = matches[1];
 
             console.log('Saw uuid '+ player_uuid);
-            doCommand('say heard entity id');
-doPlayer(player_uuid);
-        //    doLog(player_uuid);
+            rcon.send('say heard entity id');
             return;
         }
 
@@ -173,14 +104,6 @@ doPlayer(player_uuid);
             //rcon.send('say logged in');
             return;
         }
-
- //       if (subject.includes('time is')) {
- //           //console.log('login spotted');
- //           //rcon.send('say logged in');
- //           doMessage("say " + subject);
- //           return;
- //       }
-
 
         if (subject.includes('lost connection: Disconnected')) {
             //console.log('login spotted');
@@ -192,48 +115,36 @@ doPlayer(player_uuid);
 
         if (subject.includes('logged in with entity id')) {
             console.log('login spotted');
-            doLog(player_name);
-            doCommand('say logged in');
+            rcon.send('say logged in');
             return;
         }
 
         if (subject.includes('joined the game')) {
             console.log('joined the game');
-            doCommand('say Joined.');
-            return;
-        }
-
-        if (subject.includes('Gave')) {
-            console.log('Saw ' + subject);
-            doCommand('say Gift made.');
+            rcon.send('say Joined.');
             return;
         }
 
         if (subject.includes('was burnt to a crisp whilst fighting')) {
-            doCommand('say Still smouldering.');
+            rcon.send('say Ouch.');
             return;
         }
 
         if (subject.includes('was shot by')) {
-            doCommand('say Ouch.');
+            rcon.send('say Ouch.');
             return;
         }
 
 
         if (subject.includes('was slain by')) {
-            doCommand('say That is unfortunate.');
-            return;
-        }
-
-        if (subject.includes('was shot by')) {
-            doCommand('say That makes me sad.');
+            rcon.send('say That is unfortunate.');
             return;
         }
 
 
         if (subject.includes('left the game')) {
             console.log('left the game');
-            doCommand('say Left.');
+            rcon.send('say Left.');
             return;
         }
 
@@ -245,9 +156,6 @@ doPlayer(player_uuid);
 
     }
 
-    // Do we recognize this user.
-
-    //
 
     console.log("Processing subject.");
 
@@ -266,10 +174,12 @@ doPlayer(player_uuid);
       match = true;
     }
 
-    if (player_name == "rcon") {
+    if (subject.includes('[Rcon]')) {
+      // Ignore instructions from Rcon.
+      // Since these will be from this code.
+//      return;
 
-        if (!subject.includes(magic_word)) {
-           console.log("Saw a Rcon message. And ignored it.");
+        if (!subject.includes('qiyu')) {
             return;
         }
 
@@ -281,36 +191,31 @@ doPlayer(player_uuid);
 
     if (match == false) {return;}
 
-    console.log("Responding to subject: "+ subject);
-
-// Used https://www.uuidgenerator.net/version4 for the UUID.
+    console.log("Responding to subject.");
 /* Check for system 
 [00:44:38] [Server thread/INFO]: Player2 lost connection: Disconnected
 [00:44:38] [Server thread/INFO]: Player2 left the game
 [00:52:02] [Server thread/INFO]: player1 lost connection: Disconnected
 [00:52:02] [Server thread/INFO]: player1 left the game
-[01:24:21] [User Authenticator #18/INFO]: UUID of player player1 is e9b607a1-4b28-471b-973e-426e15209add
+[01:24:21] [User Authenticator #18/INFO]: UUID of player player1 is a4e3ac12-3e18-4a9b-b554-5519572227f6
 [01:24:21] [Server thread/INFO]: player1[/192.168.0.1:12345] logged in with entity id 543249 at (-43.329160948779915, 60.0, -117.72683698862112)
 */
-/*
+
 rcon.connect().then(() => {
-    return;
+return;
 //  return rcon.send('say Edna has connected.'); // That's a command for Minecraft
 }).then(res => {
   console.log(res);
 }).then(() => {
 //  return rcon.disconnect();
-}).catch(function(error) {
-  console.log(error);
 });
-*/
+
 
 
     filtered_input = filtered_input.trim();
 
     if (player_name == "world") {
-        doWorld();
-//        doCommand('say world message heard');
+        rcon.send('say world message heard');
         console.log('Hook for world messages needing a response.');
         //return;
 
@@ -319,13 +224,13 @@ rcon.connect().then(() => {
             return;
         }
 
-        var filtered_input = subject.replace(magic_word,'');
+        var filtered_input = subject.replace('qiyu','');
 
     }
 
     filtered_input = filtered_input.trim();
 
-    //console.log("Preparing response to " + filtered_input);
+    console.log("Preparing response to " + filtered_input);
 
     var response = "say heard " + filtered_input;
 
@@ -336,49 +241,33 @@ rcon.connect().then(() => {
     ngrams = ngrams.concat( getNgrams(filtered_input, 1) );
 
 
-//console.log(ngrams);
-var match = false;
-  ngrams.forEach(function(ngram) {
-  //console.log("Checking " + ngram);
+console.log(ngrams);
+
+ngrams.forEach(function(ngram) {
+//  console.log(ngram);
 
 
-    switch(ngram) {
-//        case (ngram == ""):
-//            rcon.send('say hey');
-//            return;
+    switch(true) {
+        case (ngram == ""):
+            rcon.send('say hey');
+            return;
 
-        case "call crow":
+        case (ngram == "call crow"):
             callCrow();
-match = true;
-            break;
+            return;
 
-        case "call bob":
+        case (ngram == "call bob"):
             callCrow();
-match = true;
-            break;
+            return;
 
-        case "crow":
+        case (ngram == "crow"):
             doCrow();
-match = true;
-            //doMessage('say Bob appeared. Somewhere.');
-            break;
+            rcon.send('say Bob appeared. Somewhere.');
+            return;
 
-        case "select":
+        case (ngram == "select"):
             doSelect();
-match = true;
-            break;
-
-        case "time":
-            doTime();
-match = true;
-//            doCommand("say asked for the time");
-            break;
-
-        case "tp":
-            doCommand("spreadplayers ~ ~ 1 1000 true @p");
-match = true;
-            break;
-
+            return;
 
         default:
             // code block
@@ -386,12 +275,11 @@ match = true;
 
 });
 
-if (match != true) {
-
     console.log("Sent message to stack.");
-    var response = doStack(filtered_input);
+    var response = callStack(filtered_input);
     console.log(response);
-}
+//    rcon.send('say ' + response);
+
 });
 
 
@@ -426,19 +314,7 @@ if (i != 0) {ngram += " ";}
         return ngrams;
     }
 
-function doLog(text) {
 
-	var stream = fs.createWriteStream("users.txt", {flags:'a'});
-	console.log(new Date().toISOString());
-	[...Array(10000)].forEach( function (item,index) {
-//	    stream.write(index + "\n");
-            stream.write(text + "\n");
-
-	});
-	console.log(new Date().toISOString());
-	stream.end();
-
-}
 
 function doCrow() {
 
@@ -448,21 +324,14 @@ function doCrow() {
 
 function doSpawn() {
     $type = "friend";
-    doCommand("say Welcome " + $type + ".");
+    rcon.send("say Welcome " + $type + ".");
 }
 
 function makeCrow() {
 
-    console.log("start makecrow");
-
-//    var command = "summon minecraft:parrot ~ ~ ~ {Invulnerable:0b,CustomNameVisible:0b,Tags:[\"4fe3\"],CustomName:\"{\"text\":\"Bob\"}\"}";
-    var command = "summon minecraft:parrot ~ ~ ~";
-
-    doCommand(command);
-
-
-//    console.log("end makeCrow: " + t);
-
+    rcon.send('summon parrot ~ ~1 ~ {CustomName:"\"Bob\"", CustomNameVisible:1, NoAI:0, Variant: 4}');
+    // tp @e[name=Bob] ~ ~ ~1
+    rcon.send('say Summoned a crow.');
 }
 
 // effect give @p wither 99999
@@ -471,15 +340,12 @@ function doNuuid() {
 
 }
 
-function doCommand(text) {
+function doMessage() {
 
-//var text = "say \"hello\"";
-
-   conn.send(text);
 
 }
 
-function doStack(command, callback) {
+function callStack(command, callback) {
     command = command.trim();
     request.get('https://stackr.ca/api/redpanda/thing', {
     }, (error, res, body) => {
@@ -493,10 +359,17 @@ function doStack(command, callback) {
 
     parse(thing_uuid , command, function( val ) {
         newData = val;
-        if (val == null) {return;}
-        doCommand("say " + val);
-    })
+        rcon.send("say " + val);
 
+        //console.log(val);
+
+//         callback(val);
+         //console.log( "newData : " , newData );
+         //console.log( "this happens last" );
+         // if you need to return anything, return it here. Do everything else you want to do inside this parse function.
+        // return res.sendStatus( 200 );
+return val;
+    } );
 })
 
 
@@ -516,6 +389,7 @@ function parse( out , command, callback ){
 
   $search_string = '<div class="blob">sms<br>';
   var  scrap = body.split($search_string);
+//console.log(scrap);
 
 
     if (scrap[1] === undefined){
@@ -526,6 +400,7 @@ function parse( out , command, callback ){
 
 
   var a =scrap[1].split("<br>");
+  //console.log(a[0]);
   callback(a[0]);
   })
 }
@@ -534,9 +409,9 @@ function parse( out , command, callback ){
 
 function callCrow() {
 
-    doStack("crow");
-    doCommand("tp @e[name=Bob] @p");
-    doCommand("say Called Bob.");
+    callStack("crow");
+    rcon.send("tp @e[name=Bob] @p");
+    rcon.send("say Called Bob.");
 
 }
 
@@ -546,7 +421,7 @@ function doSelect() {
     // devstack
     // Select entities within the radius of a specific entity.
 
-    doCommand("scoreboard objectives add selectMe dummy");
+    rcon.send("scoreboard objectives add selectMe dummy");
 
 //rcon.send("say selected");
 //Then, on a fast redstone clock, give all entities a selectMe score of 1:
@@ -557,14 +432,12 @@ function doSelect() {
 //Now, you can select them by targeting all entities within a 50 block radius that have a selectMe score of 1:
 //rcon.send("say @e[score_selectMe_min=1,r=50]");
 
-     doCommand("say Selected.");
+     rcon.send("say Selected.");
 }
 
 function doStart() {
 
-    doCommand("say Ticking.");
-    //
-    doPlayer("e9b607a1-4b28-471b-973e-426e15209add");
+    rcon.send("say Ticking.");
 
 }
 
@@ -575,31 +448,9 @@ if (tick_count == 0) {
     doStart();
 }
 
+
 tick_count +=1;
 if (tick_count > 4) {tick_count = 1; doBar();}
-
-}
-
-function doTime() {
-
-   var t = doCommand("time query daytime");
-   doCommand("say " + t);
-//t.then(function(value) {
-//  console.log("do Time " +value);
-//  rcon.send("say " + value);
-  // expected output: "foo"
-//});
-
-
-//   doCommand("time query daytime").then(function(value) {
-
-//  console.log("do Time " +value);
-//  rcon.send("say " + value);
-  // expected output: "foo"
-//});
-
-   console.log("Asked for the time: " + t);
-   return;
 
 }
 
@@ -612,10 +463,7 @@ var announcement = announcements[Math.floor(Math.random()*announcements.length)]
 
 if ((bar_count % 7) == 0) {
    // doAnnouncement(announcement);
-//   rcon.send("time query daytime");
-
-
-    doStack(announcement);
+    callStack(announcement);
 }
 
 //bar_count += 1;
@@ -624,50 +472,5 @@ if (bar_count > 80) {bar_count = 0;}
 }
 
 function doAnnouncement(text) {
-    doCommand("say " +text);
-}
-
-// State pattern. Edna is awake. Edna is working. Edna is on their way home. Edna is at Place.
-
-// Need to check the uuid to assign trust.
-
-function doWorld(text) {
-
-        doCommand('say world message heard');
-
-}
-
-function doPlayer(text) {
-
-fs.readFile('STACK', 'utf8', function(err, contents) {
-    if (err) throw err;
-    var array = contents.toString().split("\n");
-    for(i in array) {
-        if (text == array[i]) {console.log("Trusted.");}
-        //console.log(array[i]);
-    }
-    console.log("Printing STACK.");
-    console.log(contents);
-});
-
-var data = "\n!" + text;
-// append data to file
-fs.appendFile('STACK',data, 'utf8',
-    // callback function
-    function(err) { 
-        if (err) throw err;
-        // if no error
-        console.log("Data is appended to file successfully.")
-});
-
-
-
- 
-console.log('after calling readFile');
-
-    // For now expect a UUID.
-    // Check that against seen UUIDs
-    // Say either "Trusted." or "Walking."
-    doLog(text);
-
+    rcon.send("say " +text);
 }
