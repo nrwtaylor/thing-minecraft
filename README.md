@@ -4,23 +4,26 @@ A tool to connect a Minecraft server to the either a local instance of the a Sta
 
 ## Getting Started
 
-These instructions will get you a daemon running whihc will monitor Minecraft chat channel and world traffic.
+These instructions will get you a daemon running which will monitor Minecraft chat channel and world traffic.
 
 ### Prerequisites
 
-Install NodeJS.
-Install Minecraft Server.
+Assumes you have NodeJS installed and Minecraft Server. And that you have set up an RCON port in the Minecraft server.properties file.
 
 ```
-Give examples
+broadcast-rcon-to-ops=true
+server-ip=
+rcon.port=25575
+enable-command-block=false
+enable-rcon=true
 ```
 
 ### Installing
 
-A step by step series of examples that tell you how to get a development env running
+A step by step series of examples that tell you how to get a development env running.  In this case with an agent called "edna".
 
 ```
-sudo nano /etc/systemd/system/<NAME OF>.service
+sudo nano /etc/systemd/system/edna.service
 ```
 
 ```
@@ -49,32 +52,39 @@ Restart=on-failure
 WantedBy=multi-user.target
 ```
 
-Connect into Minecraft and type 'edna tp'.
+```
+sudo systemctl start edna
+```
 
-## Running the tests
 
+Connect into Minecraft. Open then chat channel (with "t").
+```
+edna hey
+```
+
+Or try a random teleport.
+```
+edna tp
+```
+
+
+## Test
+
+Watch output and confirm RCON connection is established. Run in a terminal window.
+```
 sudo node thing.js
-Watch output and confirm RCON connection is established.
+```
 
-### Break down into end to end tests
-
-Connects to the localhost RCON and sends a Minecraft command. Outputs minecraft chat channel traffic.
+Watch for this message to confirm edna is ticking.
 
 ```
 [Rcon] Ticking.
 ```
 
-### And coding style tests
-
-Explain what these tests test and why
-
-```
-Give an example
-```
 
 ## Deployment
 
-Add additional notes about how to deploy this on a live system
+Warn users of edna / rcon traffic through the chat channel.
 
 ## Built With
 
@@ -83,7 +93,7 @@ Add additional notes about how to deploy this on a live system
 
 ## Contributing
 
-Please read [CONTRIBUTING.md](https://gist.github.com/PurpleBooth/b24679402957c63ec426) for details on our code of conduct, and the process for submitting pull requests to us.
+Contact the author.
 
 ## Versioning
 
@@ -102,4 +112,3 @@ This project is licensed under the Apache 2.0 License - see the [LICENSE.md](LIC
 ## Acknowledgments
 
 * Thank you Notch.
-
