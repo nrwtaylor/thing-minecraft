@@ -1,0 +1,25 @@
+{
+  "name": "thing-minecraft",
+  "version": "0.0.2",
+  "description": "Nodejs thing",
+  "main": "thing.js",
+  "dependencies": {
+    "gearmanode": "^0.9.2",
+    "linkifyjs": "^2.1.8",
+    "rcon": "^1.0.3",
+    "tail": "^2.0.3",
+    "uuid": "^3.3.3",
+    "var_dump": "^1.0.5",
+    "winston": "^0.7.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "NRW Taylor",
+  "license": "Apache-2.0",
+  "keywords": [
+    "thing",
+    "hangouts"
+  ]
+}

@@ -6,6 +6,13 @@ var Rcon = require('rcon');
 
 const var_dump = require('var_dump');
 
+var gearmanode = require('gearmanode');
+
+// Turn off Gearman node debug
+//winston = require('winston');
+//for (key in winston.loggers.loggers) {
+//    winston.loggers.loggers[key].clear();
+//}
 
 const uuidv4 = require('uuid/v4');
 //uuidv4(); // ⇨ '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'
@@ -19,9 +26,8 @@ conn.on('auth', function() {
     var thing = doMeta(null, str);
     doThing(thing);
 }).on('end', function() {
-    console.log("Socket closed!");
+    console.log("Rcon Socket closed.");
     process.exit();
-
 });
 
 conn.connect();
@@ -390,7 +396,9 @@ time_minecraft = thing.subject.replace('The time is ', '');
     if (match != true) {
 
         console.log("Sent message to stack.");
-        thing.response = doStack(thing, filtered_input);
+        //thing.response = doStack(thing, filtered_input);
+        thing.response = doGearman(thing, filtered_input);
+
         console.log(thing.response);
     }
 }
@@ -501,7 +509,6 @@ function doStack(thing, agent_input, callback) {
 
     })
 
-
     function parse(out, command, callback) {
 
         request.get('https://stackr.ca/thing/' + out + '/to/agent/subject/' + command, {
@@ -534,9 +541,109 @@ function doStack(thing, agent_input, callback) {
 
 }
 
+function doGearman(thing, agent_input, callback) {
+    command = agent_input.trim();
+
+    var agent_name = "edna";
+
+    var client = gearmanode.client();
+    var match = true;
+
+    var from = "agent"
+    var to =  "<private>"
+    var subject = command
+
+    console.log('Heard, "' + subject + '"')
+
+
+    console.log(to);
+    console.log(from);
+    console.log(subject);
+    console.log(match);
+
+    if (match == false) {return;}
+
+    var arr = {"from":from,"to":to,"subject":subject} 
+    var datagram = JSON.stringify(arr) 
+
+    try {    
+        var job = client.submitJob('call_agent', datagram);
+    }
+
+    catch (e) {
+        console.log(e);
+
+
+       var sms = "quiet"
+       var message = "Quietness. Just quietness."
+    }
+
+
+    job.on('workData', function(data) {
+    //    console.log('WORK_DATA >>> ' + data);
+    });
+
+    job.on('complete', function() {
+console.log("Gearman response completed.");
+      sms = "sms"
+      message = "sms"
+
+      try {
+        var thing_report = JSON.parse(job.response);
+        var sms = thing_report.sms
+        var message = thing_report.message
+      }
+
+      catch (e) {
+        console.log("Error parsing Gearman response.");
+        var sms = "quiet"
+        var message = "Quietness. Just quietness."
+      }
+
+//      var sms = thing_report.sms
+//      var message = thing_report.message
+console.log("to " + to);
+console.log("sms " + sms);
+console.log("Done");
+
+//sms = linkifyHtml(sms, {
+//  defaultProtocol: 'http'
+//});
+
+if (sms == null) {sms = agent_name.toUpperCase() + " | ?";}
+var response = [[0, sms]]; 
+var response = [[sms]]; 
+var_dump(response);
+
+    doCommand(thing, "say " + response);
+
+    client.close();
+
+      return
+
+    });
+
+
+
+//    console.log(sms);
+//    console.log(message);
+
+//if (sms == null) {sms = agent_name.toUpperCase() + " | ?";}
+//var response = [[0, sms]]; 
+//var_dump(response);
+
+
+//    doCommand(thing, "say " + response);
+
+//    client.close();
+
+}
+
+
 function callCrow(thing) {
 
-    doStack(thing, "crow");
+    //doStack(thing, "crow");
+doGearman(thing, "crow");
     doCommand(thing, "tp @e[name=Bob] @p");
     doCommand(thing, "say Called Bob.");
 
@@ -608,8 +715,8 @@ console.log("Bar " + bar_count);
 
     if ((bar_count % 7) == 0) {
 
-        doStack(thing, announcement);
-
+      //  doStack(thing, announcement);
+doGearman(thing, announcement);
     }
 
     //bar_count += 1;
@@ -637,7 +744,8 @@ function doWorld(thing, agent_input) {
 
 function doPlayer(thing, agent_input) {
 
-    fs.readFile('STACK', 'utf8', function(err, contents) {
+$file = '/home/nick/codebase/thing-minecraft/STACK';
+    fs.readFile($file, 'utf8', function(err, contents) {
         if (err) throw err;
         var array = contents.toString().split("\n");
         for (i in array) {
@@ -652,10 +760,14 @@ function doPlayer(thing, agent_input) {
 
     var data = "\n!" + agent_input;
     // append data to file
-    fs.appendFile('STACK', data, 'utf8',
+    fs.appendFile($file, data, 'utf8',
         // callback function
         function(err) {
-            if (err) throw err;
+            if (err) {
+ console.log("Stack error." );
+return;
+}
+//if (err) throw err;
             // if no error
             console.log("Added thing to stack.")
         });
