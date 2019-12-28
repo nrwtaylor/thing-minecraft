@@ -162,6 +162,9 @@ function doThing(thing, agent_input = null) {
 
     if (thing.player_name == "world") {
 
+//doGearman(thing, "heard world traffic");
+
+
         if (thing.subject.includes('UUID of ')) {
 
             //           matches = subject.match(/listings\/([A-F\d-]+)\?/);
@@ -427,17 +430,17 @@ function getNgrams(input, n = 3) {
 
 function doLog(thing, agent_input = null) {
 
-    var stream = fs.createWriteStream("users.txt", {
-        flags: 'a'
-    });
-    console.log(new Date().toISOString());
-    [...Array(10000)].forEach(function(item, index) {
-        //	    stream.write(index + "\n");
-        stream.write(agent_input + "\n");
+//    var stream = fs.createWriteStream("users.txt", {
+//        flags: 'a'
+//    });
+//    console.log(new Date().toISOString());
+//    [...Array(10000)].forEach(function(item, index) {
+//        //	    stream.write(index + "\n");
+//        stream.write(agent_input + "\n");
 
-    });
-    console.log(new Date().toISOString());
-    stream.end();
+//    });
+//    console.log(new Date().toISOString());
+//    stream.end();
 
 }
 
