@@ -1,4 +1,4 @@
-// Updated September 10, 2019
+// Updated December 28, 2019
 
 var fs = require('fs');
 
@@ -162,9 +162,6 @@ function doThing(thing, agent_input = null) {
 
     if (thing.player_name == "world") {
 
-//doGearman(thing, "heard world traffic");
-
-
         if (thing.subject.includes('UUID of ')) {
 
             //           matches = subject.match(/listings\/([A-F\d-]+)\?/);
@@ -190,10 +187,21 @@ function doThing(thing, agent_input = null) {
             console.log('time spotted');
 time_minecraft = thing.subject.replace('The time is ', '');
 
+doGearman(thing, "minecraft " + time_minecraft);
 
             doCommand(thing, 'say ' + time_minecraft);
             return;
         }
+
+//There are 1 of a max 20 players online: dragon_willow
+        if (thing.subject.includes('players online')) {
+console.log('saw player list');
+            console.log(thing.subject);
+doGearman(thing, "minecraft " +thing.subject);
+            //doCommand(thing, 'say Left.');
+            return;
+        }
+
 
 
         if (thing.subject.includes('lost connection: Disconnected')) {
@@ -429,18 +437,18 @@ function getNgrams(input, n = 3) {
 }
 
 function doLog(thing, agent_input = null) {
+return;
+    var stream = fs.createWriteStream("users.txt", {
+        flags: 'a'
+    });
+    console.log(new Date().toISOString());
+    [...Array(10000)].forEach(function(item, index) {
+        //	    stream.write(index + "\n");
+        stream.write(agent_input + "\n");
 
-//    var stream = fs.createWriteStream("users.txt", {
-//        flags: 'a'
-//    });
-//    console.log(new Date().toISOString());
-//    [...Array(10000)].forEach(function(item, index) {
-//        //	    stream.write(index + "\n");
-//        stream.write(agent_input + "\n");
-
-//    });
-//    console.log(new Date().toISOString());
-//    stream.end();
+    });
+    console.log(new Date().toISOString());
+    stream.end();
 
 }
 
@@ -491,6 +499,7 @@ function doCommand(thing, agent_input) {
 
 }
 
+// Non local stack
 function doStack(thing, agent_input, callback) {
     command = agent_input.trim();
     request.get('https://stackr.ca/api/redpanda/thing', {}, (error, res, body) => {
@@ -715,6 +724,15 @@ console.log("Bar " + bar_count);
     //rcon.send("say Bar " + bar_count + ".");
     var announcements = ['Merp.', 'Foo.', 'Bar.', 'Meh.', 'Ping.'];
     var announcement = announcements[Math.floor(Math.random() * announcements.length)];
+
+doCommand(thing, 'list');
+doCommand(thing, "time query daytime");
+doGearman(thing, "THING " + "66ad");
+
+//doCommand(thing, "locate");
+//doCommand(thing, "me");
+
+
 
     if ((bar_count % 7) == 0) {
 

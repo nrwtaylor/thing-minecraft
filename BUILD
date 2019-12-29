@@ -10,7 +10,7 @@ Rebooted several times. Increased server memory size to 4Gb, Installed 1.15.1.
 
 # Install the minecraft server.
  
-edna@thing-keybase:/opt/minecraft/server
+edna@thing:/opt/minecraft/server
 
 sudo systemctl status minu
 
@@ -42,3 +42,7 @@ Restart=always
 
 [Install]
 WantedBy=multi-user.target
+
+# useful commands
+sudo systemctl restart edna
+sudo journalctl -u edna.service -f
