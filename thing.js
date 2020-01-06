@@ -1,4 +1,4 @@
-// Updated December 28, 2019
+// Updated January 6, 2020
 
 var fs = require('fs');
 
@@ -16,6 +16,11 @@ var gearmanode = require('gearmanode');
 
 const uuidv4 = require('uuid/v4');
 //uuidv4(); // ⇨ '1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed'
+
+winston = require('winston');
+for (key in winston.loggers.loggers) {
+    winston.loggers.loggers[key].remove(winston.transports.Console);
+}
 
 var conn = new Rcon('localhost', 25575, 'test');
 conn.on('auth', function() {
@@ -57,7 +62,7 @@ var fs = require("fs");
 var filePath = "/opt/minecraft/server/logs/latest.log";
 var file = fs.readFileSync(filePath);
 
-console.log("Reading minecraft server log.");
+console.log("Reading minecraft server log. X");
 
 //console.log(file);
 
@@ -68,12 +73,16 @@ tail = new Tail(filePath);
 //when a new line appears do this
 tail.on("line", function(agent_input) {
 
+console.log(agent_input);
+
     var thing = doMeta(null, agent_input);
+console.log(thing);
     doThing(thing, agent_input);
 
 });
 
 function doMeta(thing, agent_input = null) {
+console.log(agent_input);
     thing = {};
 
     if (typeof thing.uuid !== 'undefined') {
@@ -96,7 +105,6 @@ function doMeta(thing, agent_input = null) {
         var a = scrap[1].split(">");
 
         thing.subject = a[0].substr(0);
-
 
         var temp = scrap[1].split(" ");
         thing.player_name = "world";
@@ -162,6 +170,10 @@ function doThing(thing, agent_input = null) {
 
     if (thing.player_name == "world") {
 
+if (thing.subject) {
+doGearman(thing, "minecraft quiet " +thing.subject);
+}
+
         if (thing.subject.includes('UUID of ')) {
 
             //           matches = subject.match(/listings\/([A-F\d-]+)\?/);
@@ -187,9 +199,8 @@ function doThing(thing, agent_input = null) {
             console.log('time spotted');
 time_minecraft = thing.subject.replace('The time is ', '');
 
-doGearman(thing, "minecraft " + time_minecraft);
-
-            doCommand(thing, 'say ' + time_minecraft);
+//doGearman(thing, "minecraft " + time_minecraft);
+//            doCommand(thing, 'say ' + time_minecraft);
             return;
         }
 
@@ -197,7 +208,7 @@ doGearman(thing, "minecraft " + time_minecraft);
         if (thing.subject.includes('players online')) {
 console.log('saw player list');
             console.log(thing.subject);
-doGearman(thing, "minecraft " +thing.subject);
+//doGearman(thing, "minecraft " +thing.subject);
             //doCommand(thing, 'say Left.');
             return;
         }
@@ -274,7 +285,7 @@ doGearman(thing, "minecraft " +thing.subject);
 
         // Check the magic word.
         if (!thing.subject.includes(magic_word)) {
-            console.log("Ignored a world message.");
+            console.log("Ignored a world message. - " + thing.subject);
             return;
         }
 
@@ -284,7 +295,9 @@ doGearman(thing, "minecraft " +thing.subject);
 
     //
 
-    console.log("Processing subject.");
+    console.log("Processing subject - " + thing.subject);
+
+        console.log(thing);
 
     // Spot keywords in messages.
     var match = false
@@ -336,6 +349,8 @@ doGearman(thing, "minecraft " +thing.subject);
     if (thing.player_name == "world") {
         doWorld(thing, agent_input);
         console.log('Hook for world messages needing a response.');
+
+
 
         // magic word for testing from rcon
         if (!thing.subject.includes(magic_word)) {
@@ -406,7 +421,7 @@ doGearman(thing, "minecraft " +thing.subject);
 
     if (match != true) {
 
-        console.log("Sent message to stack.");
+        console.log("Sent message to stack - " + filtered_input);
         //thing.response = doStack(thing, filtered_input);
         thing.response = doGearman(thing, filtered_input);
 
@@ -554,7 +569,7 @@ function doStack(thing, agent_input, callback) {
 }
 
 function doGearman(thing, agent_input, callback) {
-    command = agent_input.trim();
+    var command = agent_input.trim();
 
     var agent_name = "edna";
 
@@ -568,17 +583,14 @@ function doGearman(thing, agent_input, callback) {
     console.log('Heard, "' + subject + '"')
 
 
-    console.log(to);
-    console.log(from);
-    console.log(subject);
-    console.log(match);
+    console.log("to " + to + " from " + from + " subject " + subject + " agent_input " + agent_input + " match " + match);
 
     if (match == false) {return;}
 
     var arr = {"from":from,"to":to,"subject":subject} 
     var datagram = JSON.stringify(arr) 
 
-    try {    
+    try {
         var job = client.submitJob('call_agent', datagram);
     }
 
@@ -596,7 +608,7 @@ function doGearman(thing, agent_input, callback) {
     });
 
     job.on('complete', function() {
-console.log("Gearman response completed.");
+//console.log("Gearman response completed.");
       sms = "sms"
       message = "sms"
 
@@ -616,18 +628,27 @@ console.log("Gearman response completed.");
 //      var message = thing_report.message
 console.log("to " + to);
 console.log("sms " + sms);
-console.log("Done");
 
 //sms = linkifyHtml(sms, {
 //  defaultProtocol: 'http'
 //});
 
 if (sms == null) {sms = agent_name.toUpperCase() + " | ?";}
-var response = [[0, sms]]; 
-var response = [[sms]]; 
-var_dump(response);
 
-    doCommand(thing, "say " + response);
+//var response = [[0, sms]]; 
+//var response = [[sms]]; 
+//var_dump(response);
+
+    if (!sms.toLowerCase().includes('no response.')) {
+
+//    if (!response[0][0].toLowerCase().includes('ack.')) {
+
+//    doCommand(thing, "say " + response);
+
+    doCommand(thing, "say " + sms);
+
+}
+
 
     client.close();
 
@@ -691,6 +712,7 @@ function doStart(thing, agent_input = null) {
 
 function doTick(thing, agent_input = null) {
 console.log("Tick " + tick_count);
+doGearman(thing, "minecraft thing tick " + tick_count);
     if (tick_count == 0) {
         // Start
         doStart(thing, agent_input);
@@ -720,6 +742,8 @@ function doTime(thing, agent_input = null) {
 
 function doBar(thing, agent_input = null) {
 console.log("Bar " + bar_count);
+doGearman(thing, "minecraft thing bar " + bar_count);
+
     bar_count += 1;
     //rcon.send("say Bar " + bar_count + ".");
     var announcements = ['Merp.', 'Foo.', 'Bar.', 'Meh.', 'Ping.'];
